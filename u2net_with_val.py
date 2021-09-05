@@ -74,28 +74,46 @@ epoch_num = 100000
 batch_size_train = 12
 batch_size_val = 1
 train_num = 0
-val_num = 0
+val_percent = 0.3
 
-tra_img_name_list = glob.glob(data_dir + tra_image_dir + '*' + image_ext)
 
-tra_lbl_name_list = []
-for img_path in tra_img_name_list:
-    img_name = img_path.split(os.sep)[-1]
 
-    aaa = img_name.split(".")
-    bbb = aaa[0:-1]
-    imidx = bbb[0]
+
+
+
+
+
+all_img_name_list = glob.glob(data_dir + tra_image_dir + '*' + image_ext)
+print(all_img_name_list)
+
+# tra_img_name_list = glob.glob(data_dir + tra_image_dir + '*' + image_ext)
+
+# tra_lbl_name_list = []
+# for img_path in tra_img_name_list:
+#     img_name = img_path.split(os.sep)[-1]
+
+#     aaa = img_name.split(".")
+#     bbb = aaa[0:-1]
+#     imidx = bbb[0]
     
-    for i in range(1,len(bbb)):
-        imidx = imidx + "." + bbb[i]
-    tra_lbl_name_list.append(data_dir + tra_label_dir + imidx +'_mask'+ label_ext)
+#     for i in range(1,len(bbb)):
+#         imidx = imidx + "." + bbb[i]
+#     tra_lbl_name_list.append(data_dir + tra_label_dir + imidx +'_mask'+ label_ext)
 
-print("---")
-print("train images: ", len(tra_img_name_list))
-print("train labels: ", len(tra_lbl_name_list))
-print("---")
+# print("---")
+# print("train images: ", len(tra_img_name_list))
+# print("train labels: ", len(tra_lbl_name_list))
+# print("---")
 
-train_num = len(tra_img_name_list)
+# train_num = len(tra_img_name_list)
+
+# # SET UP VALIDATE DATA
+
+# n_val = int(len(tra_img_name_list) * val_percent)
+# n_train = len(tra_img_name_list) - n_val
+# train_set, val_set = random_split(tra_img_name_list, [n_train, n_val], generator=torch.Generator().manual_seed(0))
+
+
 
 # salobj_dataset = SalObjDataset(
 #     img_name_list=tra_img_name_list,
@@ -103,92 +121,88 @@ train_num = len(tra_img_name_list)
 #     transform=transforms.Compose([
 #         RescaleT(320),
 #         RandomCrop(288),
-#         ToTensorLab(flag=0)]))
+#         RandomGrayscale(0.1),
+#         #RandomColorJitter(0.3, brightness=(0.3,1.5), contrast=(0.3,1.5), saturation=(0.5,1.5), hue=(-0.2,0.2)),
+#         #RandomGaussianSmoothing(0.1),
+#         ToTensorLab(flag=0),
+#         #RandomRotation(40)        
+#     ])
+# )
 
-salobj_dataset = SalObjDataset(
-    img_name_list=tra_img_name_list,
-    lbl_name_list=tra_lbl_name_list,
-    transform=transforms.Compose([
-        RescaleT(320),
-        RandomCrop(288),
-        RandomGrayscale(0.1),
-        #RandomColorJitter(0.3, brightness=(0.3,1.5), contrast=(0.3,1.5), saturation=(0.5,1.5), hue=(-0.2,0.2)),
-        #RandomGaussianSmoothing(0.1),
-        ToTensorLab(flag=0),
-        #RandomRotation(40)        
-    ])
-)
+# salobj_dataloader = DataLoader(salobj_dataset, batch_size=batch_size_train, shuffle=True, num_workers=15)
 
-salobj_dataloader = DataLoader(salobj_dataset, batch_size=batch_size_train, shuffle=True, num_workers=15)
+# # ------- 3. define model --------
+# # define the net
 
-# ------- 3. define model --------
-# define the net
+# net = U2NET(3, 1)
 
-net = U2NET(3, 1)
+# #net.load_state_dict(torch.load(model_dir + model_name+"_bce_epoch_150_train_0.357947_tar_0.038307.pth"))
 
-#net.load_state_dict(torch.load(model_dir + model_name+"_bce_epoch_150_train_0.357947_tar_0.038307.pth"))
-
-if torch.cuda.is_available():
-    net.cuda()
+# if torch.cuda.is_available():
+#     net.cuda()
     
-# ------- 4. define optimizer --------
-print("---define optimizer...")
-optimizer = optim.Adam(net.parameters(), lr=0.0001, betas=(0.9, 0.999), eps=1e-08, weight_decay=0)
+# # ------- 4. define optimizer --------
+# print("---define optimizer...")
+# optimizer = optim.Adam(net.parameters(), lr=0.0001, betas=(0.9, 0.999), eps=1e-08, weight_decay=0)
 
-# ------- 5. training process --------
-print("---start training...")
-ite_num = 0
-running_loss = 0.0
-running_tar_loss = 0.0
-ite_num4val = 0
-save_frq = 1000 # save the model every 2000 iterations
+# # ------- 5. training process --------
+# print("---start training...")
+# ite_num = 0
+# running_loss = 0.0
+# running_tar_loss = 0.0
+# ite_num4val = 0
+# save_frq = 1000 # save the model every 2000 iterations
 
-writer = SummaryWriter()
-for epoch in range(0, epoch_num):
-    net.train()
+
+
+
+
+
+# writer = SummaryWriter()
+# for epoch in range(0, epoch_num):
+#     net.train()
     
-    for i, data in enumerate(tqdm(salobj_dataloader)):
-        ite_num = ite_num + 1
-        ite_num4val = ite_num4val + 1
+#     for i, data in enumerate(tqdm(salobj_dataloader)):
+#         ite_num = ite_num + 1
+#         ite_num4val = ite_num4val + 1
 
-        inputs, labels = data['image'], data['label']
+#         inputs, labels = data['image'], data['label']
 
-        inputs = inputs.type(torch.FloatTensor)
-        labels = labels.type(torch.FloatTensor)
+#         inputs = inputs.type(torch.FloatTensor)
+#         labels = labels.type(torch.FloatTensor)
 
-        # wrap them in Variable
-        if torch.cuda.is_available():
-            inputs_v, labels_v = Variable(inputs.cuda(), requires_grad=False), Variable(labels.cuda(),
-                                                                                        requires_grad=False)
-        else:
-            inputs_v, labels_v = Variable(inputs, requires_grad=False), Variable(labels, requires_grad=False)
+#         # wrap them in Variable
+#         if torch.cuda.is_available():
+#             inputs_v, labels_v = Variable(inputs.cuda(), requires_grad=False), Variable(labels.cuda(),
+#                                                                                         requires_grad=False)
+#         else:
+#             inputs_v, labels_v = Variable(inputs, requires_grad=False), Variable(labels, requires_grad=False)
 
-        # y zero the parameter gradients
-        optimizer.zero_grad()
+#         # y zero the parameter gradients
+#         optimizer.zero_grad()
 
-        # forward + backward + optimize
-        d0, d1, d2, d3, d4, d5, d6 = net(inputs_v)
-        loss2, loss = muti_bce_loss_fusion(d0, d1, d2, d3, d4, d5, d6, labels_v, i )
-        writer.add_scalar("Loss/train", loss, epoch)
-        writer.add_scalar("Loss2/train", loss2, epoch)
+#         # forward + backward + optimize
+#         d0, d1, d2, d3, d4, d5, d6 = net(inputs_v)
+#         loss2, loss = muti_bce_loss_fusion(d0, d1, d2, d3, d4, d5, d6, labels_v, i )
+#         writer.add_scalar("Loss/train", loss, epoch)
+#         writer.add_scalar("Loss2/train", loss2, epoch)
 
-        loss.backward()
-        optimizer.step()
+#         loss.backward()
+#         optimizer.step()
 
-        # # print statistics
-        running_loss += loss.data.item()
-        running_tar_loss += loss2.data.item()
+#         # # print statistics
+#         running_loss += loss.data.item()
+#         running_tar_loss += loss2.data.item()
 
-        # del temporary outputs and loss
-        del d0, d1, d2, d3, d4, d5, d6, loss2, loss
+#         # del temporary outputs and loss
+#         del d0, d1, d2, d3, d4, d5, d6, loss2, loss
 
-        print("[epoch: %3d/%3d, batch: %5d/%5d, ite: %d] train loss: %3f, tar: %3f " % (
-        epoch + 1, epoch_num, (i + 1) * batch_size_train, train_num, ite_num, running_loss / ite_num4val, running_tar_loss / ite_num4val))
 
-        if ite_num % save_frq == 0:
+#         if ite_num % save_frq == 0:
+#         	print("[epoch: %3d/%3d, batch: %5d/%5d, ite: %d] train loss: %3f, tar: %3f " % (epoch + 1, epoch_num, (i + 1) * batch_size_train, train_num, ite_num, running_loss / ite_num4val, running_tar_loss / ite_num4val))
 
-            torch.save(net.state_dict(), model_dir + model_name+"_bce_itr_%d_train_%3f_tar_%3f.pth" % (ite_num, running_loss / ite_num4val, running_tar_loss / ite_num4val))
-            running_loss = 0.0
-            running_tar_loss = 0.0
-            net.train()  # resume train
-            ite_num4val = 0
+#             torch.save(net.state_dict(), model_dir + model_name+"_bce_itr_%d_train_%3f_tar_%3f.pth" % (ite_num, running_loss / ite_num4val, running_tar_loss / ite_num4val))
+#             running_loss = 0.0
+#             running_tar_loss = 0.0
+#             net.train()  # resume train
+#             ite_num4val = 0

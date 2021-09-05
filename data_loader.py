@@ -6,12 +6,14 @@ from skimage import io, transform, color
 import numpy as np
 import random
 import math
-
-
+import matplotlib.pyplot as plt
 from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms, utils
 from PIL import Image
-
+from torchvision import transforms as T
+from PIL import ImageFilter
+from torchvision.transforms import functional as F, InterpolationMode
+import cv2
 #==========================dataset load==========================
 class RescaleT(object):
 
@@ -74,6 +76,69 @@ class Rescale(object):
 
 		return {'imidx':imidx, 'image':img,'label':lbl}
 
+class RandomGrayscale(object):
+    def __init__(self, p=0.1):
+        self.p = p
+
+    def __call__(self, sample):
+        try:
+            imidx, image, label = sample['imidx'], sample['image'], sample['label']
+            transform = T.RandomGrayscale(p=self.p)
+            image = transform(torch.tensor( image.transpose((2,0,1)).copy() ))
+            image = image.numpy().transpose((1,2,0))
+            return {'imidx':imidx,'image': image , 'label':label} 
+        except:
+            return sample
+
+class RandomColorJitter(object):
+    def __init__(self, p=0.25, brightness=0, contrast=0, saturation=0, hue=0):
+        self.p = p
+        self.brightness = brightness
+        self.contrast = contrast
+        self.saturation = saturation
+        self.hue = hue
+
+    def __call__(self, sample):
+        try:
+            imidx, image, label = sample['imidx'], sample['image'], sample['label']
+            if random.random() < self.p:
+                transform = T.ColorJitter(brightness=self.brightness, contrast=self.contrast, saturation=self.saturation,
+                                          hue=self.hue)
+                image = transform(     torch.tensor( image.transpose((2,0,1)).copy() )    )       
+                image = image.numpy().transpose((1,2,0))
+            return {'imidx':imidx,'image':image, 'label':label} 
+        except:
+            return sample
+
+class RandomGaussianSmoothing(object):
+    def __init__(self, p=0.2):
+        self.p = p
+
+    def __call__(self, sample):
+        try:
+            imidx, image, label = sample['imidx'], sample['image'], sample['label']
+            if random.random() < self.p:
+                image = cv2.blur(image,(4,4))
+            return {'imidx':imidx,'image':image, 'label':label} 
+        except:
+            return sample
+        
+class RandomRotation(object):
+    def __init__(self, degrees, resample=False, expand=False, center=None, fill=-2):
+        self.resample = resample
+        self.expand = expand
+        self.center = center
+        self.fill = fill
+        self.degrees = (-degrees, degrees)
+
+    def __call__(self, sample):
+        imidx, image, label = sample['imidx'], sample['image'], sample['label']
+        angle = random.uniform(self.degrees[0], self.degrees[1])
+        image = F.rotate(image, angle, self.resample, self.expand, self.center, self.fill)
+        label = F.rotate(label, angle, self.resample, self.expand, self.center, fill = None )
+        return {'imidx':imidx,'image':image, 'label':label} 
+    
+    
 class RandomCrop(object):
 
 	def __init__(self,output_size):
@@ -85,11 +150,14 @@ class RandomCrop(object):
 			self.output_size = output_size
 	def __call__(self,sample):
 		imidx, image, label = sample['imidx'], sample['image'], sample['label']
-
-		if random.random() >= 0.5:
+        
+		if random.random() >= 0.9:
 			image = image[::-1]
 			label = label[::-1]
-
+		elif random.random() >= 0.5:
+			image = np.flip(image , 1).copy()
+			label = np.flip(label , 1).copy()
+            
 		h, w = image.shape[:2]
 		new_h, new_w = self.output_size
 
@@ -150,7 +218,9 @@ class ToTensorLab(object):
 			label = label
 		else:
 			label = label/np.max(label)
-
+		############ ERRORRR DIM ############            
+		if len(image.shape) != 3:
+			image = np.expand_dims(image, axis=2)
 		# change the color space
 		if self.flag == 2: # with rgb and Lab colors
 			tmpImg = np.zeros((image.shape[0],image.shape[1],6))
@@ -220,9 +290,11 @@ class ToTensorLab(object):
 		#transforms.Normalize(mean = (0.485, 0.456, 0.406), std = (0.229, 0.224, 0.225))
 		tmpImg = tmpImg.transpose((2, 0, 1))
 		tmpLbl = label.transpose((2, 0, 1))
-
-		return {'imidx':torch.from_numpy(imidx), 'image': torch.from_numpy(tmpImg), 'label': torch.from_numpy(tmpLbl)}
-
+		try:   
+			return {'imidx':torch.from_numpy(imidx), 'image': torch.from_numpy(tmpImg), 'label': torch.from_numpy(tmpLbl)}
+		except:
+			return {'imidx':torch.from_numpy(imidx.copy()), 'image': torch.from_numpy(tmpImg.copy()), 'label': torch.from_numpy(tmpLbl.copy())}
+        
 class SalObjDataset(Dataset):
 	def __init__(self,img_name_list,lbl_name_list,transform=None):
 		# self.root_dir = root_dir
